@@ -74,3 +74,11 @@ def create_user_v2():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+    from versioning_utils import deprecated_version, version_response
+
+# Update v1 endpoints with deprecation decorator
+@app.route('/api/v1/users', methods=['GET'])
+@deprecated_version(sunset_date="2025-12-31")
+def get_users_v1():
+    # Your existing implementation
+    pass
