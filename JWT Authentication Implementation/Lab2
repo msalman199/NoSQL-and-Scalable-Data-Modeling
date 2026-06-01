@@ -1,0 +1,298 @@
+JWT Authentication Implementation
+Prerequisites
+Basic understanding of REST APIs and HTTP methods
+Familiarity with Node.js and Express.js
+Knowledge of JavaScript ES6+ syntax
+Understanding of authentication concepts (sessions, tokens)
+Linux command line basics
+Node.js and npm installed on your system
+Learning Objectives
+By completing this lab, you will:
+
+Understand JWT (JSON Web Token) structure and purpose
+Implement JWT token generation for user authentication
+Protect API endpoints using JWT middleware
+Validate and decode JWT tokens in protected routes
+Handle token expiration and refresh scenarios
+Environment Setup
+Install Required Tools
+Update system packages:
+sudo apt update
+Install Node.js and npm (if not already installed):
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+node --version
+npm --version
+Create project directory:
+mkdir ~/jwt-auth-lab
+cd ~/jwt-auth-lab
+npm init -y
+Install dependencies:
+npm install express jsonwebtoken bcryptjs dotenv
+npm install --save-dev nodemon
+Create project structure:
+touch server.js .env
+mkdir routes middleware
+touch routes/auth.js routes/protected.js middleware/authMiddleware.js
+Task 1: Generate JWT Tokens
+Step 1: Configure Environment Variables
+Edit the .env file:
+
+nano .env
+Add the following:
+
+PORT=3000
+JWT_SECRET=your_super_secret_key_change_this_in_production
+JWT_EXPIRES_IN=1h
+Step 2: Create Authentication Route
+Edit routes/auth.js:
+
+nano routes/auth.js
+Add the starter code:
+
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const router = express.Router();
+
+// Mock user database (in production, use a real database)
+const users = [];
+
+// Register endpoint
+router.post('/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // TODO: Check if user already exists
+        // TODO: Hash the password using bcrypt (salt rounds: 10)
+        // TODO: Store user in the users array
+        // TODO: Return success message
+        
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Login endpoint
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // TODO: Find user in the users array
+        // TODO: If user not found, return 401 error
+        // TODO: Compare password with hashed password using bcrypt
+        // TODO: If password invalid, return 401 error
+        // TODO: Generate JWT token with payload: { userId: user.username }
+        // TODO: Use JWT_SECRET and JWT_EXPIRES_IN from environment variables
+        // TODO: Return token in response
+        
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+module.exports = router;
+Implementation Hints:
+
+Use bcrypt.hash(password, saltRounds) for hashing
+Use bcrypt.compare(password, hashedPassword) for verification
+Use jwt.sign(payload, secret, { expiresIn: time }) for token generation
+Step 3: Test Token Generation
+Create a test file to verify registration and login:
+
+nano test-auth.sh
+Add:
+
+#!/bin/bash
+
+echo "Testing Registration..."
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"testpass123"}'
+
+echo -e "\n\nTesting Login..."
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"testpass123"}'
+Make it executable:
+
+chmod +x test-auth.sh
+Task 2: Protect Endpoints and Validate Tokens
+Step 1: Create Authentication Middleware
+Edit middleware/authMiddleware.js:
+
+nano middleware/authMiddleware.js
+Add the starter code:
+
+const jwt = require('jsonwebtoken');
+
+/**
+ * Middleware to verify JWT token
+ * Extracts token from Authorization header and validates it
+ */
+const verifyToken = (req, res, next) => {
+    // TODO: Get token from Authorization header (format: "Bearer TOKEN")
+    // TODO: Check if token exists, if not return 403 error
+    // TODO: Verify token using jwt.verify() with JWT_SECRET
+    // TODO: If verification fails, return 401 error
+    // TODO: If successful, attach decoded user data to req.user
+    // TODO: Call next() to proceed to the route handler
+};
+
+module.exports = verifyToken;
+Implementation Hints:
+
+Extract token: const token = req.headers['authorization']?.split(' ')[1]
+Verify token: jwt.verify(token, process.env.JWT_SECRET, callback)
+Handle both missing token and invalid token scenarios
+Step 2: Create Protected Routes
+Edit routes/protected.js:
+
+nano routes/protected.js
+Add:
+
+const express = require('express');
+const router = express.Router();
+const verifyToken = require('../middleware/authMiddleware');
+
+// Public route (no authentication required)
+router.get('/public', (req, res) => {
+    res.json({ message: 'This is a public endpoint' });
+});
+
+// Protected route (authentication required)
+router.get('/dashboard', verifyToken, (req, res) => {
+    // TODO: Access user information from req.user
+    // TODO: Return personalized dashboard data
+    // Example: res.json({ message: `Welcome ${req.user.userId}`, data: {...} })
+});
+
+// Protected route with user profile
+router.get('/profile', verifyToken, (req, res) => {
+    // TODO: Return user profile information
+    // TODO: Use req.user to get authenticated user details
+});
+
+module.exports = router;
+Step 3: Configure Main Server
+Edit server.js:
+
+nano server.js
+Add:
+
+require('dotenv').config();
+const express = require('express');
+const authRoutes = require('./routes/auth');
+const protectedRoutes = require('./routes/protected');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(express.json());
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api', protectedRoutes);
+
+// Health check
+app.get('/', (req, res) => {
+    res.json({ message: 'JWT Authentication API is running' });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+Step 4: Update package.json Scripts
+Edit package.json and add to the "scripts" section:
+
+"scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+}
+Step 5: Start the Server
+npm run dev
+The server should start on port 3000.
+
+Verification
+Test 1: Register a New User
+Open a new terminal and run:
+
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"secure123"}'
+Expected Output: Success message confirming registration
+
+Test 2: Login and Receive Token
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"secure123"}'
+Expected Output: JSON response with JWT token
+
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
+Save the token for next tests.
+
+Test 3: Access Public Endpoint
+curl http://localhost:3000/api/public
+Expected Output: Public message (no authentication required)
+
+Test 4: Access Protected Endpoint Without Token
+curl http://localhost:3000/api/dashboard
+Expected Output: 403 Forbidden error
+
+Test 5: Access Protected Endpoint With Valid Token
+Replace YOUR_TOKEN_HERE with the actual token from Test 2:
+
+curl http://localhost:3000/api/dashboard \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
+Expected Output: Personalized dashboard data
+
+Test 6: Access Protected Endpoint With Invalid Token
+curl http://localhost:3000/api/dashboard \
+  -H "Authorization: Bearer invalid.token.here"
+Expected Output: 401 Unauthorized error
+
+Test 7: Verify Token Expiration
+Wait for the token to expire (1 hour by default, or modify JWT_EXPIRES_IN to "60s" for faster testing), then try accessing the protected endpoint again.
+
+Expected Output: 401 Unauthorized error with token expired message
+
+Troubleshooting Tips
+Issue: "Cannot find module" errors
+
+Solution: Ensure all dependencies are installed with npm install
+Issue: Token verification fails
+
+Solution: Check that JWT_SECRET matches between token generation and verification
+Verify the Authorization header format is "Bearer TOKEN"
+Issue: bcrypt errors on Linux
+
+Solution: Install build tools: sudo apt install build-essential python3
+Issue: Port already in use
+
+Solution: Change PORT in .env or kill the process: lsof -ti:3000 | xargs kill
+Issue: Password comparison always fails
+
+Solution: Ensure you're using bcrypt.compare() not direct comparison
+Verify password is being hashed during registration
+Conclusion
+You have successfully implemented JWT-based authentication for a REST API. You learned to:
+
+Generate secure JWT tokens upon user login
+Hash passwords using bcrypt for secure storage
+Create middleware to validate JWT tokens
+Protect API endpoints requiring authentication
+Handle token expiration and invalid token scenarios
+Key Takeaways:
+
+JWTs are stateless and contain encoded user information
+Always use environment variables for secrets
+Token validation should happen before accessing protected resources
+Proper error handling prevents security information leakage
+Next Steps:
+
+Implement token refresh mechanism
+Add role-based access control (RBAC)
+Integrate with a real database (PostgreSQL, MongoDB)
+Implement token blacklisting for logout functionality
+This authentication pattern is widely used in modern web applications and microservices architectures.
