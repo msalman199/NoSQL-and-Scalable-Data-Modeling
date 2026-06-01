@@ -125,3 +125,14 @@ class Book(Resource):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+search_parser.add_argument('author', type=str, help='Filter by author', location='args')
+search_parser.add_argument('year', type=int, help='Filter by year', location='args')
+args = search_parser.parse_args()
+result = books_db
+
+if args['author']:
+    result = [b for b in result if args['author'].lower() in b['author'].lower()]
+if args['year']:
+    result = [b for b in result if b['year'] == args['year']]
+
+return result
