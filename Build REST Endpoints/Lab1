@@ -1,0 +1,373 @@
+Build REST Endpoints
+Prerequisites
+Before starting this lab, you should have:
+
+Basic understanding of HTTP methods (GET, POST, PUT, DELETE)
+Familiarity with Python programming
+Knowledge of JSON data format
+Basic Linux command line skills
+Understanding of database concepts (tables, queries)
+Learning Objectives
+By completing this lab, you will:
+
+Develop RESTful APIs using Flask framework
+Implement CRUD operations through HTTP endpoints
+Connect REST APIs to a SQLite database
+Handle HTTP requests and responses with proper status codes
+Test API endpoints using curl and browser tools
+Environment Setup
+Al Nafi provides a bare-metal Linux machine. Click Start Lab to begin.
+
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python3 and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir ~/rest-api-lab
+cd ~/rest-api-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Flask and dependencies
+pip install flask flask-cors
+Task 1: Create Basic REST API Structure
+Step 1: Initialize Database Schema
+Create a database initialization script:
+
+nano init_db.py
+Add the following code:
+
+import sqlite3
+
+def init_database():
+    """
+    Initialize SQLite database with books table.
+    Creates the database file and schema if not exists.
+    """
+    conn = sqlite3.connect('library.db')
+    cursor = conn.cursor()
+    
+    # TODO: Create books table with columns:
+    # - id (INTEGER PRIMARY KEY AUTOINCREMENT)
+    # - title (TEXT NOT NULL)
+    # - author (TEXT NOT NULL)
+    # - year (INTEGER)
+    # - isbn (TEXT UNIQUE)
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS books (
+            -- Add your column definitions here
+        )
+    ''')
+    
+    # TODO: Insert 3 sample books for testing
+    sample_books = [
+        # Add tuples with (title, author, year, isbn)
+    ]
+    
+    # cursor.execute("INSERT INTO books (title, author, year, isbn) VALUES (?, ?, ?, ?)", sample_books[0])
+    
+    conn.commit()
+    conn.close()
+    print("Database initialized successfully!")
+
+if __name__ == '__main__':
+    init_database()
+Run the initialization:
+
+python3 init_db.py
+Step 2: Create Database Helper Module
+Create a database operations file:
+
+nano db_operations.py
+import sqlite3
+from typing import List, Dict, Optional
+
+DATABASE = 'library.db'
+
+def get_db_connection():
+    """Establish database connection with row factory."""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def get_all_books() -> List[Dict]:
+    """
+    Retrieve all books from database.
+    
+    Returns:
+        List of dictionaries containing book data
+    """
+    # TODO: Connect to database
+    # TODO: Execute SELECT query to get all books
+    # TODO: Convert rows to list of dictionaries
+    # TODO: Close connection and return results
+    pass
+
+def get_book_by_id(book_id: int) -> Optional[Dict]:
+    """
+    Retrieve a single book by ID.
+    
+    Args:
+        book_id: The book's unique identifier
+    
+    Returns:
+        Dictionary with book data or None if not found
+    """
+    # TODO: Implement query with WHERE clause
+    pass
+
+def create_book(title: str, author: str, year: int, isbn: str) -> int:
+    """
+    Insert a new book into database.
+    
+    Args:
+        title: Book title
+        author: Book author
+        year: Publication year
+        isbn: ISBN number
+    
+    Returns:
+        ID of newly created book
+    """
+    # TODO: Execute INSERT statement
+    # TODO: Return lastrowid
+    pass
+
+def update_book(book_id: int, title: str, author: str, year: int, isbn: str) -> bool:
+    """
+    Update existing book record.
+    
+    Args:
+        book_id: Book ID to update
+        title, author, year, isbn: New values
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    # TODO: Execute UPDATE statement with WHERE clause
+    # TODO: Check rowcount to verify update
+    pass
+
+def delete_book(book_id: int) -> bool:
+    """
+    Delete a book from database.
+    
+    Args:
+        book_id: Book ID to delete
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    # TODO: Execute DELETE statement
+    pass
+Task 2: Implement REST Endpoints
+Step 1: Create Flask Application
+Create the main application file:
+
+nano app.py
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import db_operations
+
+app = Flask(__name__)
+CORS(app)
+
+# GET /api/books - Retrieve all books
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    """
+    Endpoint to retrieve all books.
+    
+    Returns:
+        JSON array of books with 200 status
+    """
+    # TODO: Call db_operations.get_all_books()
+    # TODO: Return jsonify(books) with status 200
+    pass
+
+# GET /api/books/<id> - Retrieve single book
+@app.route('/api/books/<int:book_id>', methods=['GET'])
+def get_book(book_id):
+    """
+    Endpoint to retrieve a specific book.
+    
+    Args:
+        book_id: Book ID from URL path
+    
+    Returns:
+        JSON object with book data or 404 error
+    """
+    # TODO: Call db_operations.get_book_by_id(book_id)
+    # TODO: If book exists, return jsonify(book), 200
+    # TODO: If not found, return jsonify({'error': 'Book not found'}), 404
+    pass
+
+# POST /api/books - Create new book
+@app.route('/api/books', methods=['POST'])
+def create_book():
+    """
+    Endpoint to create a new book.
+    
+    Expects JSON body with: title, author, year, isbn
+    
+    Returns:
+        JSON with new book ID and 201 status
+    """
+    # TODO: Get JSON data from request.get_json()
+    # TODO: Validate required fields exist
+    # TODO: Call db_operations.create_book()
+    # TODO: Return jsonify({'id': new_id, 'message': 'Book created'}), 201
+    # TODO: Handle errors with 400 status
+    pass
+
+# PUT /api/books/<id> - Update existing book
+@app.route('/api/books/<int:book_id>', methods=['PUT'])
+def update_book(book_id):
+    """
+    Endpoint to update an existing book.
+    
+    Args:
+        book_id: Book ID from URL path
+    
+    Expects JSON body with: title, author, year, isbn
+    
+    Returns:
+        Success message or 404/400 error
+    """
+    # TODO: Get JSON data
+    # TODO: Validate fields
+    # TODO: Call db_operations.update_book()
+    # TODO: Return appropriate status code
+    pass
+
+# DELETE /api/books/<id> - Delete book
+@app.route('/api/books/<int:book_id>', methods=['DELETE'])
+def delete_book(book_id):
+    """
+    Endpoint to delete a book.
+    
+    Args:
+        book_id: Book ID from URL path
+    
+    Returns:
+        Success message or 404 error
+    """
+    # TODO: Call db_operations.delete_book()
+    # TODO: Return jsonify({'message': 'Book deleted'}), 200 if successful
+    # TODO: Return 404 if book not found
+    pass
+
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+Step 2: Start the API Server
+# Ensure virtual environment is activated
+source ~/rest-api-lab/venv/bin/activate
+
+# Run the Flask application
+python3 app.py
+The server should start on http://0.0.0.0:5000
+
+Verification
+Test Endpoints Using curl
+Open a new terminal (keep the Flask server running in the first terminal):
+
+# Test health check
+curl http://localhost:5000/api/health
+
+# Test GET all books
+curl http://localhost:5000/api/books
+
+# Test GET single book
+curl http://localhost:5000/api/books/1
+
+# Test POST - Create new book
+curl -X POST http://localhost:5000/api/books \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "The Pragmatic Programmer",
+    "author": "Hunt and Thomas",
+    "year": 1999,
+    "isbn": "978-0201616224"
+  }'
+
+# Test PUT - Update book
+curl -X PUT http://localhost:5000/api/books/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Title",
+    "author": "Updated Author",
+    "year": 2023,
+    "isbn": "978-1234567890"
+  }'
+
+# Test DELETE
+curl -X DELETE http://localhost:5000/api/books/1
+
+# Verify deletion
+curl http://localhost:5000/api/books/1
+Expected Results
+GET /api/books: Returns JSON array with status 200
+GET /api/books/1: Returns single book object or 404
+POST /api/books: Returns new book ID with status 201
+PUT /api/books/1: Returns success message with status 200
+DELETE /api/books/1: Returns success message with status 200
+Subsequent GET after DELETE should return 404
+Verify Database Changes
+# Check database directly
+sqlite3 library.db "SELECT * FROM books;"
+Troubleshooting Tips
+Port Already in Use
+
+# Find process using port 5000
+sudo lsof -i :5000
+# Kill the process
+kill -9 <PID>
+Module Not Found Error
+
+# Ensure virtual environment is activated
+source ~/rest-api-lab/venv/bin/activate
+# Reinstall dependencies
+pip install flask flask-cors
+Database Locked Error
+
+Close all SQLite connections
+Restart the Flask application
+JSON Decode Error
+
+Verify Content-Type header is set to application/json
+Check JSON syntax in curl commands
+404 on All Endpoints
+
+Verify Flask app is running
+Check route definitions match URL patterns
+Ensure no typos in endpoint paths
+Conclusion
+You have successfully:
+
+Built a RESTful API with Flask framework
+Implemented CRUD operations (Create, Read, Update, Delete)
+Connected REST endpoints to a SQLite database
+Handled HTTP requests and responses with appropriate status codes
+Tested API functionality using curl commands
+This lab demonstrates core concepts used in modern web services and microservices architectures. RESTful APIs are fundamental to building scalable, maintainable applications that separate frontend and backend concerns. The patterns you've learned here apply to production systems using more robust databases like PostgreSQL or MySQL.
+
+Next Steps
+To extend this lab:
+
+Add input validation and error handling
+Implement pagination for GET all books
+Add search and filter capabilities
+Include authentication and authorization
+Write unit tests for endpoints
+Add API documentation with Swagger/OpenAPI
