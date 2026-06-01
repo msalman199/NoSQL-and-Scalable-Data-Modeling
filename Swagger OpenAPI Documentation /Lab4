@@ -1,0 +1,417 @@
+Swagger/OpenAPI Documentation
+Prerequisites
+Basic understanding of REST APIs and HTTP methods
+Familiarity with Python and Flask framework
+Knowledge of JSON data structures
+Basic Linux command-line skills
+Understanding of API endpoints and request/response patterns
+Learning Objectives
+By the end of this lab, you will be able to:
+
+Implement OpenAPI 3.0 specification in a Flask application
+Generate interactive Swagger UI documentation automatically
+Customize API documentation with descriptions, examples, and schemas
+Test API endpoints directly through Swagger interface
+Validate API responses against OpenAPI schemas
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install -y python3 python3-pip python3-venv
+
+# Create project directory
+mkdir ~/swagger-lab
+cd ~/swagger-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install required packages
+pip install flask flask-restx werkzeug==2.3.0
+Note: We use flask-restx which provides built-in Swagger/OpenAPI support for Flask applications.
+
+Task 1: Create a Basic API with Swagger Documentation
+Step 1: Create the Base Application Structure
+Create the main application file:
+
+nano app.py
+Add the following starter code:
+
+from flask import Flask, request
+from flask_restx import Api, Resource, fields
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app)
+
+# TODO: Initialize the API with custom documentation
+# Hint: Use Api() with title, version, description, and doc parameters
+api = Api(
+    app,
+    version='1.0',
+    title='Book Library API',
+    description='A simple API for managing a book library',
+    doc='/docs'
+)
+
+# Create namespace for organizing endpoints
+ns = api.namespace('books', description='Book operations')
+
+# In-memory database
+books_db = [
+    {'id': 1, 'title': '1984', 'author': 'George Orwell', 'year': 1949},
+    {'id': 2, 'title': 'To Kill a Mockingbird', 'author': 'Harper Lee', 'year': 1960}
+]
+
+# TODO: Define the book model for Swagger documentation
+# Hint: Use api.model() with fields for id, title, author, year
+book_model = api.model('Book', {
+    'id': fields.Integer(required=True, description='Book ID'),
+    'title': fields.String(required=True, description='Book title'),
+    'author': fields.String(required=True, description='Book author'),
+    'year': fields.Integer(required=True, description='Publication year')
+})
+
+# TODO: Create input model without id field (for POST requests)
+book_input_model = api.model('BookInput', {
+    # Add fields: title, author, year
+})
+
+
+@ns.route('/')
+class BookList(Resource):
+    @ns.doc('list_books')
+    @ns.marshal_list_with(book_model)
+    def get(self):
+        '''List all books'''
+        return books_db
+    
+    @ns.doc('create_book')
+    @ns.expect(book_input_model)
+    @ns.marshal_with(book_model, code=201)
+    def post(self):
+        '''Create a new book'''
+        # TODO: Implement book creation logic
+        # 1. Get JSON data from api.payload
+        # 2. Generate new ID
+        # 3. Add book to books_db
+        # 4. Return the new book
+        pass
+
+
+@ns.route('/<int:id>')
+@ns.response(404, 'Book not found')
+@ns.param('id', 'The book identifier')
+class Book(Resource):
+    @ns.doc('get_book')
+    @ns.marshal_with(book_model)
+    def get(self, id):
+        '''Fetch a book by ID'''
+        # TODO: Find and return book by id
+        # Return 404 if not found using api.abort(404, "Book not found")
+        pass
+    
+    @ns.doc('delete_book')
+    @ns.response(204, 'Book deleted')
+    def delete(self, id):
+        '''Delete a book'''
+        # TODO: Implement delete logic
+        # Return empty response with 204 status
+        pass
+    
+    @ns.doc('update_book')
+    @ns.expect(book_input_model)
+    @ns.marshal_with(book_model)
+    def put(self, id):
+        '''Update a book'''
+        # TODO: Implement update logic
+        # Find book, update fields, return updated book
+        pass
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+Step 2: Implement the Missing Methods
+Complete the TODO sections in the code:
+
+For POST method (create_book):
+
+Access request data using api.payload
+Generate new ID: max([b['id'] for b in books_db]) + 1
+Append new book to books_db
+Return the created book
+For GET method (get_book):
+
+Use list comprehension or loop to find book
+Return book if found, otherwise api.abort(404, "Book not found")
+For DELETE method:
+
+Find book index in list
+Remove using books_db.pop(index) or books_db.remove(book)
+Return empty tuple with status: return '', 204
+For PUT method:
+
+Find book by ID
+Update fields from api.payload
+Return updated book
+Step 3: Run and Test the Application
+# Make sure you're in the virtual environment
+source ~/swagger-lab/venv/bin/activate
+
+# Run the application
+python3 app.py
+Access Swagger UI in your browser:
+
+http://localhost:5000/docs
+You should see an interactive API documentation interface.
+
+Task 2: Customize and Enhance Documentation
+Step 1: Add Advanced Documentation Features
+Create an enhanced version with more detailed documentation:
+
+nano app_enhanced.py
+from flask import Flask
+from flask_restx import Api, Resource, fields, reqparse
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app)
+
+# Enhanced API configuration
+api = Api(
+    app,
+    version='2.0',
+    title='Book Library API',
+    description='A comprehensive API for managing a book library with advanced features',
+    doc='/docs',
+    contact='admin@library.com',
+    license='MIT'
+)
+
+ns = api.namespace('books', description='Book management operations')
+
+books_db = [
+    {'id': 1, 'title': '1984', 'author': 'George Orwell', 'year': 1949, 'isbn': '978-0451524935'},
+    {'id': 2, 'title': 'To Kill a Mockingbird', 'author': 'Harper Lee', 'year': 1960, 'isbn': '978-0061120084'}
+]
+
+# Enhanced model with validation
+book_model = api.model('Book', {
+    'id': fields.Integer(readonly=True, description='Unique book identifier'),
+    'title': fields.String(required=True, description='Book title', example='The Great Gatsby'),
+    'author': fields.String(required=True, description='Author name', example='F. Scott Fitzgerald'),
+    'year': fields.Integer(required=True, description='Publication year', min=1000, max=2100, example=1925),
+    'isbn': fields.String(description='ISBN number', example='978-0743273565')
+})
+
+book_input_model = api.model('BookInput', {
+    'title': fields.String(required=True, description='Book title', example='The Great Gatsby'),
+    'author': fields.String(required=True, description='Author name', example='F. Scott Fitzgerald'),
+    'year': fields.Integer(required=True, description='Publication year', example=1925),
+    'isbn': fields.String(description='ISBN number', example='978-0743273565')
+})
+
+# TODO: Create a parser for query parameters
+# Hint: Use reqparse.RequestParser() and add arguments for filtering
+search_parser = reqparse.RequestParser()
+# Add argument for 'author' (type=str, help text, location='args')
+# Add argument for 'year' (type=int, help text, location='args')
+
+
+@ns.route('/')
+class BookList(Resource):
+    @ns.doc('list_books', 
+            params={
+                'author': 'Filter by author name',
+                'year': 'Filter by publication year'
+            })
+    @ns.marshal_list_with(book_model)
+    @ns.expect(search_parser)
+    def get(self):
+        '''List all books with optional filtering'''
+        # TODO: Implement filtering logic
+        # 1. Parse arguments using search_parser.parse_args()
+        # 2. Filter books_db based on provided parameters
+        # 3. Return filtered results
+        pass
+    
+    @ns.doc('create_book',
+            responses={
+                201: 'Book created successfully',
+                400: 'Validation error'
+            })
+    @ns.expect(book_input_model, validate=True)
+    @ns.marshal_with(book_model, code=201)
+    def post(self):
+        '''Create a new book with validation'''
+        # TODO: Implement with validation
+        # Check if book with same title and author exists
+        # If exists, use api.abort(400, "Book already exists")
+        pass
+
+
+@ns.route('/<int:id>')
+@ns.param('id', 'The book identifier')
+class Book(Resource):
+    @ns.doc('get_book',
+            responses={
+                200: 'Success',
+                404: 'Book not found'
+            })
+    @ns.marshal_with(book_model)
+    def get(self, id):
+        '''Fetch a specific book by ID'''
+        for book in books_db:
+            if book['id'] == id:
+                return book
+        api.abort(404, f"Book {id} not found")
+    
+    @ns.doc('update_book',
+            responses={
+                200: 'Book updated successfully',
+                404: 'Book not found'
+            })
+    @ns.expect(book_input_model, validate=True)
+    @ns.marshal_with(book_model)
+    def put(self, id):
+        '''Update an existing book'''
+        for book in books_db:
+            if book['id'] == id:
+                book.update(api.payload)
+                return book
+        api.abort(404, f"Book {id} not found")
+    
+    @ns.doc('delete_book',
+            responses={
+                204: 'Book deleted successfully',
+                404: 'Book not found'
+            })
+    def delete(self, id):
+        '''Delete a book from the library'''
+        for i, book in enumerate(books_db):
+            if book['id'] == id:
+                books_db.pop(i)
+                return '', 204
+        api.abort(404, f"Book {id} not found")
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
+Step 2: Complete the Search Functionality
+Implement the search parser and filtering logic:
+
+For search_parser:
+
+search_parser.add_argument('author', type=str, help='Filter by author', location='args')
+search_parser.add_argument('year', type=int, help='Filter by year', location='args')
+For GET with filtering:
+
+args = search_parser.parse_args()
+result = books_db
+
+if args['author']:
+    result = [b for b in result if args['author'].lower() in b['author'].lower()]
+if args['year']:
+    result = [b for b in result if b['year'] == args['year']]
+
+return result
+Step 3: Test Enhanced Features
+# Stop the previous app (Ctrl+C)
+# Run enhanced version
+python3 app_enhanced.py
+Test the following in Swagger UI:
+
+GET /books/ - Try filtering by author or year
+POST /books/ - Create a new book and observe validation
+GET /books/{id} - Fetch specific book
+PUT /books/{id} - Update book details
+DELETE /books/{id} - Remove a book
+Verification
+Step 1: Verify Swagger UI Accessibility
+# Check if application is running
+curl http://localhost:5000/docs
+Expected: HTML content of Swagger UI page
+
+Step 2: Test API Endpoints via Command Line
+# List all books
+curl -X GET http://localhost:5000/books/
+
+# Create a new book
+curl -X POST http://localhost:5000/books/ \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Brave New World","author":"Aldous Huxley","year":1932,"isbn":"978-0060850524"}'
+
+# Get specific book
+curl -X GET http://localhost:5000/books/1
+
+# Search by author
+curl -X GET "http://localhost:5000/books/?author=Orwell"
+
+# Update a book
+curl -X PUT http://localhost:5000/books/1 \
+  -H "Content-Type: application/json" \
+  -d '{"title":"1984 (Updated)","author":"George Orwell","year":1949,"isbn":"978-0451524935"}'
+
+# Delete a book
+curl -X DELETE http://localhost:5000/books/2
+Step 3: Verify OpenAPI Specification
+# Download the OpenAPI JSON specification
+curl http://localhost:5000/swagger.json > openapi_spec.json
+
+# View the specification
+cat openapi_spec.json | python3 -m json.tool
+Expected output: Well-formatted JSON with paths, definitions, and schemas
+
+Step 4: Validate Documentation Features
+In Swagger UI, verify:
+
+All endpoints are listed with descriptions
+Request/response models are displayed
+Example values are shown
+Try It Out functionality works
+Response codes are documented
+Query parameters appear for filtering
+Troubleshooting Tips
+Issue: Swagger UI not loading
+
+Solution: Check if port 5000 is available: sudo netstat -tlnp | grep 5000
+Kill existing process: sudo kill -9 <PID>
+Issue: Import errors for flask_restx
+
+Solution: Ensure virtual environment is activated and packages installed
+source ~/swagger-lab/venv/bin/activate
+pip install flask flask-restx werkzeug==2.3.0
+Issue: Validation errors not showing
+
+Solution: Ensure validate=True is set in @ns.expect() decorator
+Issue: Models not appearing in Swagger UI
+
+Solution: Verify @ns.marshal_with() and @ns.expect() decorators are used correctly
+Conclusion
+You have successfully:
+
+Created a REST API with automatic Swagger/OpenAPI documentation
+Implemented interactive API documentation using flask-restx
+Customized documentation with descriptions, examples, and validation rules
+Added query parameter support with documentation
+Tested endpoints through both Swagger UI and command line
+Key Takeaways:
+
+OpenAPI/Swagger provides standardized API documentation
+Interactive documentation improves developer experience
+Proper documentation includes examples, validation rules, and response codes
+flask-restx integrates Swagger seamlessly with Flask applications
+Next Steps:
+
+Add authentication documentation (API keys, OAuth)
+Implement request/response examples for complex scenarios
+Add tags for better endpoint organization
+Export OpenAPI spec for client SDK generation
+Clean up (optional):
+
+deactivate
+cd ~
+rm -rf ~/swagger-lab
