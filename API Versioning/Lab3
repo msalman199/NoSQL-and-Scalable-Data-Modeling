@@ -1,0 +1,375 @@
+ API Versioning
+Prerequisites
+Basic understanding of RESTful APIs
+Familiarity with Python and Flask framework
+Knowledge of HTTP methods (GET, POST, PUT, DELETE)
+Basic command-line skills in Linux
+Understanding of JSON data format
+Learning Objectives
+By the end of this lab, you will be able to:
+
+Implement multiple API versioning strategies
+Design versioned routes using URL path versioning
+Maintain backward compatibility across API versions
+Handle version-specific business logic
+Test different API versions simultaneously
+Environment Setup
+Install Required Tools
+# Update package manager
+sudo apt update
+
+# Install Python and pip
+sudo apt install python3 python3-pip python3-venv -y
+
+# Create project directory
+mkdir ~/api-versioning-lab
+cd ~/api-versioning-lab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Flask and dependencies
+pip install flask requests
+Task 1: Implement URL Path Versioning
+Step 1: Create Base Application Structure
+Create the main application file:
+
+touch app.py
+Add the following starter code to app.py:
+
+from flask import Flask, jsonify, request
+from datetime import datetime
+
+app = Flask(__name__)
+
+# Sample data store
+users_db = {
+    1: {"id": 1, "name": "Alice Johnson", "email": "alice@example.com"},
+    2: {"id": 2, "name": "Bob Smith", "email": "bob@example.com"}
+}
+
+# TODO: Implement v1 API endpoints
+# Version 1: Basic user information (name and email only)
+
+@app.route('/api/v1/users', methods=['GET'])
+def get_users_v1():
+    """
+    Return all users with basic information (v1 format).
+    Should return: id, name, email
+    """
+    # TODO: Implement logic to return users in v1 format
+    pass
+
+@app.route('/api/v1/users/<int:user_id>', methods=['GET'])
+def get_user_v1(user_id):
+    """
+    Return single user with basic information (v1 format).
+    
+    Args:
+        user_id: Integer ID of the user
+    """
+    # TODO: Implement logic to return single user
+    # TODO: Handle user not found case
+    pass
+
+# TODO: Implement v2 API endpoints
+# Version 2: Enhanced user information with metadata
+
+@app.route('/api/v2/users', methods=['GET'])
+def get_users_v2():
+    """
+    Return all users with enhanced information (v2 format).
+    Should return: id, name, email, created_at, version
+    """
+    # TODO: Implement logic to return users in v2 format
+    # TODO: Add metadata fields (created_at, version)
+    pass
+
+@app.route('/api/v2/users/<int:user_id>', methods=['GET'])
+def get_user_v2(user_id):
+    """
+    Return single user with enhanced information (v2 format).
+    
+    Args:
+        user_id: Integer ID of the user
+    """
+    # TODO: Implement logic to return single user with metadata
+    # TODO: Handle user not found case
+    pass
+
+# TODO: Implement POST endpoint for v2 only
+@app.route('/api/v2/users', methods=['POST'])
+def create_user_v2():
+    """
+    Create new user (v2 only feature).
+    Expected JSON: {"name": "string", "email": "string"}
+    """
+    # TODO: Get JSON data from request
+    # TODO: Validate required fields
+    # TODO: Generate new user ID
+    # TODO: Add user to database with metadata
+    # TODO: Return created user
+    pass
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+Step 2: Implement Version 1 Endpoints
+Complete the v1 endpoints in app.py:
+
+Hints for implementation:
+
+V1 should return only basic fields: id, name, email
+Use jsonify() to return JSON responses
+Return 404 status code when user not found
+Filter the users_db dictionary to include only v1 fields
+Step 3: Implement Version 2 Endpoints
+Complete the v2 endpoints in app.py:
+
+Hints for implementation:
+
+V2 should include all v1 fields plus: created_at, version
+Add "created_at": datetime.now().isoformat() for new metadata
+Add "version": "v2" to identify API version
+For POST endpoint, generate new ID using max(users_db.keys()) + 1
+Validate that request contains required fields (name, email)
+Step 4: Test Version 1 API
+Start the Flask application:
+
+python3 app.py
+Open a new terminal and test v1 endpoints:
+
+# Test GET all users v1
+curl http://localhost:5000/api/v1/users
+
+# Test GET single user v1
+curl http://localhost:5000/api/v1/users/1
+
+# Test non-existent user
+curl http://localhost:5000/api/v1/users/999
+Expected v1 response format:
+
+{
+  "id": 1,
+  "name": "Alice Johnson",
+  "email": "alice@example.com"
+}
+Step 5: Test Version 2 API
+Test v2 endpoints:
+
+# Test GET all users v2
+curl http://localhost:5000/api/v2/users
+
+# Test GET single user v2
+curl http://localhost:5000/api/v2/users/1
+
+# Test POST create user v2
+curl -X POST http://localhost:5000/api/v2/users \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Charlie Brown", "email": "charlie@example.com"}'
+
+# Verify new user was created
+curl http://localhost:5000/api/v2/users/3
+Expected v2 response format:
+
+{
+  "id": 1,
+  "name": "Alice Johnson",
+  "email": "alice@example.com",
+  "created_at": "2024-01-15T10:30:00",
+  "version": "v2"
+}
+Task 2: Implement Backward Compatibility with Version Deprecation
+Step 1: Add Version Deprecation Warnings
+Create a new file versioning_utils.py:
+
+from functools import wraps
+from flask import jsonify, make_response
+
+def deprecated_version(sunset_date):
+    """
+    Decorator to mark API versions as deprecated.
+    
+    Args:
+        sunset_date: String indicating when version will be removed
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # TODO: Call the original function
+            # TODO: Add deprecation warning headers to response
+            # TODO: Add Sunset header with date
+            # TODO: Add Warning header with deprecation message
+            pass
+        return decorated_function
+    return decorator
+
+def version_response(data, version):
+    """
+    Format response with version information.
+    
+    Args:
+        data: Response data
+        version: API version string
+    """
+    # TODO: Add API-Version header
+    # TODO: Return formatted response
+    pass
+Step 2: Apply Deprecation to V1 Endpoints
+Update app.py to import and use the deprecation decorator:
+
+from versioning_utils import deprecated_version, version_response
+
+# Update v1 endpoints with deprecation decorator
+@app.route('/api/v1/users', methods=['GET'])
+@deprecated_version(sunset_date="2025-12-31")
+def get_users_v1():
+    # Your existing implementation
+    pass
+Implementation hints:
+
+Use make_response() to create response object
+Add header: response.headers['Sunset'] = sunset_date
+Add header: response.headers['Warning'] = '299 - "API v1 is deprecated"
+Add header: response.headers['API-Version'] = version
+Step 3: Create Version Routing Helper
+Add to versioning_utils.py:
+
+def get_api_version(request):
+    """
+    Extract API version from request path or headers.
+    
+    Args:
+        request: Flask request object
+    
+    Returns:
+        Version string (e.g., 'v1', 'v2') or default version
+    """
+    # TODO: Extract version from URL path
+    # TODO: Fallback to header-based versioning
+    # TODO: Return default version if none specified
+    pass
+
+def route_to_version(versions_map, default='v2'):
+    """
+    Route request to appropriate version handler.
+    
+    Args:
+        versions_map: Dictionary mapping versions to handler functions
+        default: Default version to use
+    """
+    # TODO: Determine requested version
+    # TODO: Call appropriate handler from versions_map
+    # TODO: Return 404 if version not supported
+    pass
+Step 4: Test Backward Compatibility
+Restart your application and test:
+
+# Test v1 with deprecation warning
+curl -i http://localhost:5000/api/v1/users
+
+# Verify headers include:
+# - Sunset: 2025-12-31
+# - Warning: 299 - "API v1 is deprecated"
+# - API-Version: v1
+
+# Test v2 (current version)
+curl -i http://localhost:5000/api/v2/users
+
+# Verify v1 still works (backward compatibility)
+curl http://localhost:5000/api/v1/users/1
+
+# Verify v2 has new features
+curl -X POST http://localhost:5000/api/v2/users \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Diana Prince", "email": "diana@example.com"}'
+Step 5: Create Version Comparison Test Script
+Create test_versions.py:
+
+import requests
+import json
+
+BASE_URL = "http://localhost:5000"
+
+def compare_versions():
+    """
+    Compare responses between API versions.
+    """
+    # TODO: Fetch user from v1
+    # TODO: Fetch same user from v2
+    # TODO: Print differences in response structure
+    # TODO: Check for deprecation headers in v1
+    # TODO: Verify v2 has additional fields
+    pass
+
+def test_backward_compatibility():
+    """
+    Verify v1 endpoints still function correctly.
+    """
+    # TODO: Test all v1 endpoints
+    # TODO: Verify response format matches v1 spec
+    # TODO: Confirm no breaking changes
+    pass
+
+if __name__ == "__main__":
+    print("Testing API Versioning...")
+    compare_versions()
+    test_backward_compatibility()
+Run the test script:
+
+python3 test_versions.py
+Verification
+Verify Version 1 Implementation
+# Should return basic user info only
+response=$(curl -s http://localhost:5000/api/v1/users/1)
+echo $response | grep -q "name" && echo "✓ V1 name field present"
+echo $response | grep -q "email" && echo "✓ V1 email field present"
+echo $response | grep -q "created_at" && echo "✗ V1 should not have metadata" || echo "✓ V1 correctly excludes metadata"
+Verify Version 2 Implementation
+# Should return enhanced user info
+response=$(curl -s http://localhost:5000/api/v2/users/1)
+echo $response | grep -q "created_at" && echo "✓ V2 metadata present"
+echo $response | grep -q "version" && echo "✓ V2 version field present"
+Verify Backward Compatibility
+# Both versions should work simultaneously
+v1_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v1/users)
+v2_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/api/v2/users)
+
+[ "$v1_status" = "200" ] && echo "✓ V1 endpoints functional"
+[ "$v2_status" = "200" ] && echo "✓ V2 endpoints functional"
+Verify Deprecation Headers
+# Check for deprecation warnings
+headers=$(curl -i -s http://localhost:5000/api/v1/users | head -n 20)
+echo "$headers" | grep -q "Sunset" && echo "✓ Sunset header present"
+echo "$headers" | grep -q "Warning" && echo "✓ Warning header present"
+Troubleshooting
+Issue: Import errors for versioning_utils
+
+Ensure versioning_utils.py is in the same directory as app.py
+Check that you've implemented all required functions
+Issue: 404 errors on API calls
+
+Verify Flask app is running: ps aux | grep python3
+Check that routes are registered: Look for route definitions in app startup logs
+Ensure correct URL format: /api/v1/users not /api/v1/users/
+Issue: JSON parsing errors
+
+Verify Content-Type header: -H "Content-Type: application/json"
+Check JSON syntax in curl commands
+Use single quotes around JSON data in curl
+Issue: Deprecation headers not appearing
+
+Ensure decorator is applied before route decorator
+Check that make_response() is used to create response object
+Verify headers are set before returning response
+Conclusion
+In this lab, you implemented API versioning using URL path-based versioning strategy. You created two versions of a user management API, where v1 provides basic functionality and v2 adds enhanced features while maintaining backward compatibility with v1.
+
+Key accomplishments:
+
+Designed versioned routes using /api/v1/ and /api/v2/ patterns
+Implemented version-specific business logic and response formats
+Added deprecation warnings to older API versions
+Maintained backward compatibility allowing both versions to coexist
+Created utilities for version management and routing
+This approach allows you to evolve APIs without breaking existing client integrations, a critical skill for production API development.
